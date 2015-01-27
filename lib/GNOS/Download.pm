@@ -60,7 +60,11 @@ sub run_download {
 
     say "OUTPUT FILE $file EXISTS AND THREAD EXITED NORMALLY, Total number of tries: $count";
     say 'DONE';
-    $thr->join() if ($thr->is_running());
+    
+    # This still needs to be tested to make sure it works. The perl documentation seams to be clear that it will work.
+    # but it still should be run several times to make sure it works. The only implecation is a perl warning that gets
+    # written to standard out when the program finishes without joining a thread that has already completed
+    $thr->join() if ($thr->is_running() || $thr->is_joinable());
 
     return 0;
 }

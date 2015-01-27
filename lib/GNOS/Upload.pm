@@ -44,6 +44,8 @@ sub run_upload {
 
     do {
 
+        sleep $cooldown_sec; #makes sure log file exists the first time through the loop
+        
         #check if upload completed
 
         open my $fh, '<', $log_file;
@@ -67,7 +69,7 @@ sub run_upload {
             }
         }
 
-        sleep $cooldown_sec;
+
 
     } while (not $completed);
 
