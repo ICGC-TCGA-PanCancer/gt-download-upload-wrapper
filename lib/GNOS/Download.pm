@@ -82,7 +82,8 @@ sub launch_and_monitor {
     say "THREAD STARTING, CMD: $command TIMEOUT: $timeout";
 
     my $pid = open my $in, '-|', "$command 2>&1";
-
+    
+    my $start_time = time;
     my $time_last_downloading = 0;
     my $last_reported_size = 0;
     while(<$in>) {
@@ -102,14 +103,15 @@ sub launch_and_monitor {
         # and a kill when the next download line appears since it could be well past
         # the timeout limit
         my $md5sum = ($_ =~ m/^Download resumed, validating checksums for existing data/g)? 1: 0;
-
+        
         if ((defined($size) &&  defined($last_reported_size) && $size > $last_reported_size) || $md5sum) {
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
             if (defined($last_reported_size) && defined($size)) { say "  LAST REPORTED SIZE $last_reported_size SIZE: $size"; }
             if (defined($md5sum)) { say "  IS MD5Sum State: $md5sum"; }
         }
-        elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) ) {
+        elsif ((($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) )
+                 or( $size == 0 and time - $start_time > 3*$timeout) {
             say 'ERROR: Killing Thread - Timed out '.time;
             exit;
         }
