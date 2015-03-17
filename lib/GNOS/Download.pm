@@ -111,7 +111,7 @@ sub launch_and_monitor {
             if (defined($md5sum)) { say "  IS MD5Sum State: $md5sum"; }
         }
         elsif ((($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) )
-                 or( $size == 0 and time - $start_time > 3*$timeout) {
+                 or ( ($size == 0) and ( (time - $start_time) > (3 * $timeout)) )) {
             say 'ERROR: Killing Thread - Timed out '.time;
             exit;
         }
