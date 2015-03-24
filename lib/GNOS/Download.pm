@@ -7,11 +7,6 @@ use feature qw(say);
 use autodie;
 use Carp qw( croak );
 
-use Config;
-$Config{useithreads} or croak('Recompile Perl with threads to run this program.');
-use threads 'exit' => 'threads_only';
-use Storable 'dclone';
-
 use constant {
     MILLISECONDS_IN_AN_HOUR => 3600000,
 };
@@ -26,66 +21,60 @@ use constant {
 #############################################################################################
 
 sub run_download {
-    my ($class, $command, $file, $retries, $cooldown_min, $timeout_min) = @_;
+    my ($class, $pem, $url, $file, $max_attempts, $cooldown_min, $timeout_min) = @_;
 
-    $retries //= 30;
+    $max_attempts //= 30;
     $timeout_min //= 60;
     $cooldown_min //= 1;
+
 
     my $timeout_mili = ($timeout_min / 60) * MILLISECONDS_IN_AN_HOUR;
     my $cooldown_sec = $cooldown_min * 60;
 
     say "TIMEOUT: min $timeout_min milli $timeout_mili";
 
-    my $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
 
-    my $count = 0;
-    while( not (-e $file) ) {
-        say "FILE: $file DOES NOT EXIST... WAITING FOR THREAD TO COMPLETE...";
-        if ( not $thr->is_running()) {
-            if (++$count < $retries ) {
-                say 'ERROR: THREAD NOT RUNNING BUT OUTPUT MISSING, RESTARTING THE THREAD!!';
-                # kill and wait to exit
-                $thr->kill('KILL')->join();
-                $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
-            }
-            else {
-               say "ERROR: Surpassed the number of retries: $retries with count $count, EXITING!!";
-               exit 1;
-            }
+
+    my ($command, $log_filepath, $time_stamp);
+ 
+    my $attempt = 0;
+    do {
+        my @now = localtime();
+        $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d", 
+                                 $now[5]+1900, $now[4]+1, $now[3],
+                                 $now[2],      $now[1],   $now[0]);
+
+        $log_filepath = "gtdownload-$time_stamp.log"; 
+        $command = "gtdownload --max-children 4 --rate-limit 200 -c $pem -vv -d $url -l $log_filepath -k 60";
+        say "STARTING DOWNLOAD WITH LOGFILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
+
+        `$command`;
+
+        if ( read_output($log_filepath, $timeout_min) ) {
+            say "Killing process";
+            die;
         }
 
-        sleep $cooldown_sec;
-    }
-
-    say "OUTPUT FILE $file EXISTS AND THREAD EXITED NORMALLY, Total number of tries: $count";
-    say 'DONE';
+        sleep (10); # to make sure that the file has been created. 
+    } while ( ($attempt < $max_attempts) and ( not (-e $file) ) );
     
-    # This still needs to be tested to make sure it works. The perl documentation seams to be clear that it will work.
-    # but it still should be run several times to make sure it works. The only implecation is a perl warning that gets
-    # written to standard out when the program finishes without joining a thread that has already completed
-    $thr->join() if ($thr->is_running() || $thr->is_joinable());
-
-    return 0;
+    return 0 if ( (-e $file) and (say "OUTPUT FILE $file EXISTS AFTER $attempt ATTEMPTS") );
+    
+    say "FAILED TO DOWNLOAD FILE: $file AFTER $attempt ATTEMPTS";
+    return 1;
+    
 }
 
-sub launch_and_monitor {
-    my ($command, $timeout) = @_;
 
-    my $my_object = threads->self;
-    my $my_tid = $my_object->tid;
+sub read_output {
+    my ($output_log, $timeout) = @_;
 
-    local $SIG{KILL} = sub { say "GOT KILL FOR THREAD: $my_tid";
-                             threads->exit;
-                           };
-
-    say "THREAD STARTING, CMD: $command TIMEOUT: $timeout";
-
-    my $pid = open my $in, '-|', "$command 2>&1";
-    
     my $start_time = time;
     my $time_last_downloading = 0;
     my $last_reported_size = 0;
+
+    open my $in, '<', $output_log;
+
     while(<$in>) {
 
         # just print the output for debugging reasons
