@@ -18,12 +18,12 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGE: run_upload($pem, $url, $file, $max_attempts, $timeout_minutes);                    #
+# USAGE: run_upload($command_template, $max_attempts, $timeout_minutes);                    #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
 sub run_download {
-    my ($class, $command, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $command_template, $max_attempts, $timeout_minutes) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
@@ -31,7 +31,7 @@ sub run_download {
     my $timeout_milliseconds = ($timeout_minutes / 60) * MILLISECONDS_IN_AN_HOUR;
     say "TIMEOUT: $timeout_minutes minutes ( $timeout_milliseconds milliseconds )";
 
-    my ($log_filepath, $time_stamp, $pid, $read_output);
+    my ($log_filepath, $time_stamp, $pid, $read_output, $command);
     my $attempt = 0;
     do {
         my @now = localtime();
@@ -40,7 +40,8 @@ sub run_download {
                                  $now[2],      $now[1],   $now[0]);
 
         $log_filepath = "gtdownload-$time_stamp.log"; 
-        $command =~ /upload\.log/$log_file_path/;
+        $command = $command_template;
+        $command =~ s/upload\.log/$log_filepath/;
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
         `$command </dev/null >/dev/null 2>&1 &`;
@@ -53,9 +54,9 @@ sub run_download {
 
     } while ( ($attempt < $max_attempts) and ( $read_output ) );
     
-    return 0 if ( ($read_output == 0) and (say "UPLOADED FILE $file AFTER $attempt ATTEMPTS") );
+    return 0 if ( ($read_output == 0) and (say "UPLOADED FILE AFTER $attempt ATTEMPTS") );
     
-    say "FAILED TO DOWNLOAD FILE: $file AFTER $attempt ATTEMPTS";
+    say "FAILED TO UPLOAD FILE AFTER $attempt ATTEMPTS";
     return 1;
     
 }
