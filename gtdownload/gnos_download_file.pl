@@ -32,7 +32,6 @@ use GNOS::Download;
 # where file is the GNOS id of the file
 
 my ($pem, $url, $file);
-my $cooldown_min = 1;
 my $timeout_min = 60;
 my $retries = 30;
 
@@ -41,12 +40,11 @@ GetOptions (
 "url=s" => \$url,
 "file=s" => \$file,
 "retries=i" => \$retries,
-"sleep-min=i" => \$cooldown_min,
 "timeout-min=i" => \$timeout_min,
 );
 
 say "FILE: $file";
 
 # will return 0 on success, not 0 on failure
-my $ret_val = GNOS::Download->run_download($pem, $url, $file, $retries, $cooldown_min, $timeout_min);
+my $ret_val = GNOS::Download->run_download($pem, $url, $file, $retries, $timeout_min);
 exit ($ret_val);
