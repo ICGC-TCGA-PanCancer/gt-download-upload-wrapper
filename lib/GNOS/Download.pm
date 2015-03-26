@@ -18,7 +18,7 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGE: run_upload($class, $pem, $url, $file, $max_attempts, $timeout_minutes);            #
+# USAGE: run_download($class, $pem, $url, $file, $max_attempts, $timeout_minutes);          #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
