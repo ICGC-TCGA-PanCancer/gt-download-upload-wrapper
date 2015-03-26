@@ -18,12 +18,12 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGE: run_upload($command_template, $max_attempts, $timeout_minutes);                    #
+# USAGE: run_upload($sub_path, $key, $max_attempts, $timeout_minutes);                      #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
 sub run_download {
-    my ($class, $command_template, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $subpath, $key, $max_attempts, $timeout_minutes) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
@@ -39,12 +39,11 @@ sub run_download {
                                  $now[5]+1900, $now[4]+1, $now[3],
                                  $now[2],      $now[1],   $now[0]);
 
-        $log_filepath = "gtdownload-$time_stamp.log"; 
-        $command = $command_template;
-        $command =~ s/upload\.log/$log_filepath/;
+        $log_filepath = "$sub_path/gtdownload-$time_stamp.log"; 
+        
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        `$command </dev/null >/dev/null 2>&1 &`;
+        `cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml  </dev/null >/dev/null 2>&1 &`;
 
 
         if ($read_output = read_output($log_filepath, $timeout_milliseconds) ) {

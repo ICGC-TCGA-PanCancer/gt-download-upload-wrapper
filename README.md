@@ -14,7 +14,7 @@ Contained are two modules one for each uploading and downloading
 
 ##Sample Upload
 
-   GNOS::Upload->run_upload($command_template, $max_attempts, $timeout_minutes);
+   GNOS::Upload->run_upload($sub_path, $key, $max_attempts, $timeout_minutes);
 
 ##Sample Download
 
