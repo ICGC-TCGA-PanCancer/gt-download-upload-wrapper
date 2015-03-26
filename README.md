@@ -14,11 +14,11 @@ Contained are two modules one for each uploading and downloading
 
 ##Sample Upload
 
-   GNOS::Upload->run_upload($command, $metadata_file);
+   GNOS::Upload->run_upload($command_template, $max_attempts, $timeout_minutes);
 
 ##Sample Download
 
-   GNOS::Download_>run_download($command, $file_name);
+   GNOS::Download->run_download($class, $pem, $url, $file, $max_attempts, $timeout_minutes);
 
 
 We are including the GNOS::Download library by using the -I flag with perl that allows you to specify a path to find the repos. Alterantively you can add the file by adding the line "use lib <lib-path>;" or add the path to the @INC Environment variable.
