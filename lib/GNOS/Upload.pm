@@ -1,4 +1,4 @@
-peackage GNOS::Download;
+package GNOS::Upload;
 
 use warnings;
 use strict;
@@ -16,13 +16,13 @@ use constant {
 #############################################################################################
 # DESCRIPTION                                                                               #
 #############################################################################################
-#  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
+#  This module is wraps the gtupload script and retries the uploads if it freezes up.       #
 #############################################################################################
 # USAGE: run_upload($sub_path, $key, $max_attempts, $timeout_minutes);                      #
-#        Where the command is the full gtdownlaod command                                   #
+#        Where the command is the full gtuplaod command                                     #
 #############################################################################################
 
-sub run_download {
+sub run_upload {
     my ($class, $subpath, $key, $max_attempts, $timeout_minutes) = @_;
 
     $max_attempts //= 30;
@@ -39,7 +39,7 @@ sub run_download {
                                  $now[5]+1900, $now[4]+1, $now[3],
                                  $now[2],      $now[1],   $now[0]);
 
-        $log_filepath = "$sub_path/gtdownload-$time_stamp.log"; 
+        $log_filepath = "$sub_path/gtupload-$time_stamp.log"; 
         
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
@@ -78,14 +78,14 @@ sub read_output {
         
         if ($percent > $last_reported_percent) {
             $time_last_uploading = time;
-            say "  DOWNLOADING TIME: $time_last_uploading";
+            say "  UPLOADING TIME: $time_last_uploading";
             say "  REPORTED PERCENT UPLOADED - LAST: $last_reported_percent CURRENT: $percent";
         }
         elsif ((($time_last_uploading != 0) and ( (time - $time_last_uploading) > $timeout) )
                  or ( ($percent == 0) and ( (time - $start_time) > (3 * $timeout)) )) { 
-                # This should trigger if gtdownload stops being able to download for a certain amount of time 
-                #     or if it never starts downloading
-            say "BASED ON OUTPUT DOWNLOAD IS NEEDING TO BE RESTARTED";
+                # This should trigger if gtupload stops being able to upload for a certain amount of time 
+                #     or if it never starts uploading
+            say "BASED ON OUTPUT UPLOAD IS NEEDING TO BE RESTARTED";
             return 1;
         }
 
