@@ -23,7 +23,7 @@ use constant {
 #############################################################################################
 
 sub run_upload {
-    my ($class, $subpath, $key, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $sub_path, $key, $max_attempts, $timeout_minutes) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
