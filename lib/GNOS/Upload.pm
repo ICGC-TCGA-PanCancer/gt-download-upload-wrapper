@@ -76,7 +76,7 @@ sub read_output {
         $percent = $last_reported_percent unless( defined $percent);
         
         if ($percent == 100) {
-            say "FINISHED DOWNLOAD at TIME: time";
+            say "FINISHED UPLOAD at TIME: time";
             return 0;
         }
         elsif ($percent > $last_reported_percent) {
