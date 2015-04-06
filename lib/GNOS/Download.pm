@@ -42,7 +42,7 @@ sub run_download {
         $log_filepath = "gtdownload-$time_stamp.log"; 
         say "STARTING DOWNLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -vv -d $url -k 60 </dev/null >/dev/null 2>&1 &`;
+        `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -vv $url -k 60 </dev/null >/dev/null 2>&1 &`;
 
         sleep 10; # to give gtdownload a chance to make the log files. 
 
