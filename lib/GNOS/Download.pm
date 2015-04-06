@@ -31,15 +31,16 @@ sub run_download {
     my $timeout_milliseconds = ($timeout_minutes / 60) * MILLISECONDS_IN_AN_HOUR;
     say "TIMEOUT: $timeout_minutes minutes ( $timeout_milliseconds milliseconds )";
 
-    my ($log_filepath, $time_stamp, $pid);
+    my ($log_filepath, $time_stamp, $pid, $random_int);
     my $attempt = 0;
     do {
         my @now = localtime();
         $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d", 
                                  $now[5]+1900, $now[4]+1, $now[3],
                                  $now[2],      $now[1],   $now[0]);
-
-        $log_filepath = "gtdownload-$time_stamp.log"; 
+ 
+        $random_int = int(rand(100000));
+        $log_filepath = "gtdownload-$time_stamp-$random_int.log"; 
         say "STARTING DOWNLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
         `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -vv $url -k 60 </dev/null >/dev/null 2>&1 &`;
