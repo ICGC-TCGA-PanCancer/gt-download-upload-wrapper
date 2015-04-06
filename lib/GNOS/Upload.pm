@@ -23,7 +23,7 @@ use constant {
 #############################################################################################
 
 sub run_upload {
-    my ($class, $subpath, $key, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $sub_path, $key, $max_attempts, $timeout_minutes) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
@@ -45,8 +45,8 @@ sub run_upload {
 
         `cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml  </dev/null >/dev/null 2>&1 &`;
 
-
-        if ($read_output = read_output($log_filepath, $timeout_milliseconds) ) {
+        $read_output = read_output($log_filepath, $timeout_milliseconds);
+        if ($read_output == 1 ) {
             say "KILLING PROCESS";
             `pkill -f 'gtupload -l $log_filepath'`;
         }
@@ -75,8 +75,11 @@ sub read_output {
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
         $percent = $last_reported_percent unless( defined $percent);
         
-        
-        if ($percent > $last_reported_percent) {
+        if ($percent == 100) {
+            say "FINISHED UPLOAD at TIME: time";
+            return 0;
+        }
+        elsif ($percent > $last_reported_percent) {
             $time_last_uploading = time;
             say "  UPLOADING TIME: $time_last_uploading";
             say "  REPORTED PERCENT UPLOADED - LAST: $last_reported_percent CURRENT: $percent";

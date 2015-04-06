@@ -76,8 +76,12 @@ sub read_output {
         $percent = $last_reported_percent unless( defined $percent);
         
         my $md5sum = ($line =~ m/^Download resumed, validating checksums for existing data/g)? 1: 0;
-        
-        if ( ($percent > $last_reported_percent) || $md5sum) {
+
+        if ($percent == 100) {
+            say "FINISHED DOWNLOAD at TIME: time";
+            return 0;
+        }      
+        elsif ( ($percent > $last_reported_percent) || $md5sum) {
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
             say "  REPORTED PERCENT DOWNLOADED - LAST: $last_reported_percent CURRENT: $size" if ($percent > $last_reported_percent);
