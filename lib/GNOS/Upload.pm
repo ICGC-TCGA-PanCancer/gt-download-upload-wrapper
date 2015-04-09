@@ -7,8 +7,6 @@ use feature qw(say);
 use autodie;
 use Carp qw( croak );
 
-use File::Tail;
-
 use constant {
     MILLISECONDS_IN_AN_HOUR => 3600000,
 };
@@ -60,26 +58,24 @@ sub run_upload {
     
 }
 
-
 sub read_output {
-    my ($output_log, $timeout) = @_;
+    my ($log_filepath, $timeout) = @_;
 
     my $start_time = time;
     my $time_last_uploading = 0;
     my $last_reported_percent = 0;
 
-    my $file=File::Tail->new($output_log);
-    my $line;
+    my ($line, $process);
 
-    while( defined($line=$file->read) ) {
+    while(  $line = `tail -n 1 $log_filepath`  ) {
+        sleep(10);
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
         $percent = $last_reported_percent unless( defined $percent);
-        
-        if ($percent == 100) {
-            say "FINISHED UPLOAD at TIME: time";
-            return 0;
-        }
-        elsif ($percent > $last_reported_percent) {
+
+        $process = `ps aux | grep 'gtupload -l $log_filepath'`;
+        return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly         
+
+        if ($percent > $last_reported_percent) {
             $time_last_uploading = time;
             say "  UPLOADING TIME: $time_last_uploading";
             say "  REPORTED PERCENT UPLOADED - LAST: $last_reported_percent CURRENT: $percent";
@@ -95,7 +91,7 @@ sub read_output {
         $last_reported_percent = $percent;
     }
 
-    return 0;
+    return 1;
 }
 
 1;
