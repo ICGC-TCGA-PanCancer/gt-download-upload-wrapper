@@ -39,11 +39,15 @@ sub run_upload {
 
         # BUG: Adam, you are already in this directory, $sub_path does not exist!
         #$log_filepath = "$sub_path/gtupload-$time_stamp.log";
-        $log_filepath = "gtupload-$time_stamp.log"; 
+        $log_filepath = "gtupload-$time_stamp.log";
 
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        `cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml  </dev/null >/dev/null 2>&1 &`;
+        my $upload_cmd = "cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml";
+
+        say "UPLOAD COMMAND: $upload_cmd\n";
+
+        `$upload_cmd </dev/null >/dev/null 2>&1 &`;
 
         $read_output = read_output($log_filepath, $timeout_milliseconds);
         if ($read_output == 1 ) {
