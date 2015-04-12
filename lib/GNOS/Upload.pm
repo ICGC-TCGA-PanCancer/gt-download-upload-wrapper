@@ -50,7 +50,7 @@ sub run_upload {
         `$upload_cmd </dev/null >/dev/null 2>&1 &`;
 
         # BUG: Adam, this log is not immediately available... sleep 10 seconds
-        sleep 10;
+        sleep 30;
 
         $read_output = read_output("$sub_path/$log_filepath", $timeout_milliseconds);
         if ($read_output == 1 ) {
