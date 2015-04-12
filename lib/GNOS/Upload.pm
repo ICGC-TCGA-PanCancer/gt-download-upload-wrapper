@@ -79,6 +79,12 @@ sub read_output {
 
     say "DIR: ".`pwd`." LOG: ".`ls -lth $log_filepath`."\n";
 
+    # FIXME: Adam, this code is very, very fragile.  First, the -vv option injects a bunch of
+    # lines into the log output that don't match the reg ex below.  And second you use tail -n 1
+    # which means it's possible to have an upload finish and, with the sleep, just miss the
+    # last % uploaded message.  A better way is to always extract the last, say, 20 lines from the file
+    # (or maybe the whole file) and find the last percent mentioned.  That way even if the upload
+    # finishes before your timeout you can detect the "100%" in the log
     while(  $line = `tail -n 1 $log_filepath`  ) {
         sleep(10);
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
