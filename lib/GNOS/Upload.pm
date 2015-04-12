@@ -49,7 +49,7 @@ sub run_upload {
 
         `$upload_cmd </dev/null >/dev/null 2>&1 &`;
 
-        $read_output = read_output($log_filepath, $timeout_milliseconds);
+        $read_output = read_output("$sub_path/$log_filepath", $timeout_milliseconds);
         if ($read_output == 1 ) {
             say "KILLING PROCESS";
             `pkill -f 'gtupload -l $log_filepath'`;
