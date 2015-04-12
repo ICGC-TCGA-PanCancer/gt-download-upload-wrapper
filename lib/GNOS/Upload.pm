@@ -55,7 +55,8 @@ sub run_upload {
         $read_output = read_output("$sub_path/$log_filepath", $timeout_milliseconds);
         if ($read_output == 1 ) {
             say "KILLING PROCESS";
-            `pkill -f 'gtupload -l $log_filepath'`;
+            # BUG: yet another bug... pkill with -l option wouldn't match!
+            `pkill -f gtupload`;
         }
 
     } while ( ($attempt < $max_attempts) and ( $read_output ) );
