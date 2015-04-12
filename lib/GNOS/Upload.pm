@@ -33,12 +33,14 @@ sub run_upload {
     my $attempt = 0;
     do {
         my @now = localtime();
-        $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d", 
+        $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d",
                                  $now[5]+1900, $now[4]+1, $now[3],
                                  $now[2],      $now[1],   $now[0]);
 
-        $log_filepath = "$sub_path/gtupload-$time_stamp.log"; 
-        
+        # BUG: Adam, you are already in this directory, $sub_path does not exist!
+        #$log_filepath = "$sub_path/gtupload-$time_stamp.log";
+        $log_filepath = "gtupload-$time_stamp.log"; 
+
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
         `cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml  </dev/null >/dev/null 2>&1 &`;
@@ -50,12 +52,12 @@ sub run_upload {
         }
 
     } while ( ($attempt < $max_attempts) and ( $read_output ) );
-    
+
     return 0 if ( ($read_output == 0) and (say "UPLOADED FILE AFTER $attempt ATTEMPTS") );
-    
+
     say "FAILED TO UPLOAD FILE AFTER $attempt ATTEMPTS";
     return 1;
-    
+
 }
 
 sub read_output {
@@ -73,7 +75,7 @@ sub read_output {
         $percent = $last_reported_percent unless( defined $percent);
 
         $process = `ps aux | grep 'gtupload -l $log_filepath'`;
-        return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly         
+        return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly
 
         if ($percent > $last_reported_percent) {
             $time_last_uploading = time;
@@ -81,8 +83,8 @@ sub read_output {
             say "  REPORTED PERCENT UPLOADED - LAST: $last_reported_percent CURRENT: $percent";
         }
         elsif ((($time_last_uploading != 0) and ( (time - $time_last_uploading) > $timeout) )
-                 or ( ($percent == 0) and ( (time - $start_time) > (3 * $timeout)) )) { 
-                # This should trigger if gtupload stops being able to upload for a certain amount of time 
+                 or ( ($percent == 0) and ( (time - $start_time) > (3 * $timeout)) )) {
+                # This should trigger if gtupload stops being able to upload for a certain amount of time
                 #     or if it never starts uploading
             say "BASED ON OUTPUT UPLOAD IS NEEDING TO BE RESTARTED";
             return 1;
