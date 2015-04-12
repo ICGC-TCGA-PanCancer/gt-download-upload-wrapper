@@ -77,12 +77,15 @@ sub read_output {
 
     my ($line, $process);
 
+    say "DIR: ".`pwd`." LOG: ".`ls -lth $log_filepath`."\n";
+
     while(  $line = `tail -n 1 $log_filepath`  ) {
         sleep(10);
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
         $percent = $last_reported_percent unless( defined $percent);
 
-        $process = `ps aux | grep 'gtupload -l $log_filepath'`;
+        # BUG: -l option wasn't in correct order, will never match
+        $process = `ps aux | grep 'gtupload'`;
         return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly
 
         if ($percent > $last_reported_percent) {
