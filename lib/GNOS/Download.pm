@@ -67,6 +67,7 @@ sub read_output {
     my $last_reported_percent = 0;
 
     my ($line, $process);
+    sleep (20); # to wait for gtdownload to create the log file
 
     while( $line = `tail -n 1 $log_filepath` ) {
         sleep 10;
