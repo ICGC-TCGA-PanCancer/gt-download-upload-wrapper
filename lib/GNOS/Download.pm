@@ -41,7 +41,7 @@ sub run_download {
         $log_filepath = "gtdownload-$time_stamp-$random_int.log"; 
         say "STARTING DOWNLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -vv $url -k 60 </dev/null >/dev/null 2>&1 &`;
+        `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -v $url -k 60 </dev/null >/dev/null 2>&1 &`;
 
         sleep 10; # to give gtdownload a chance to make the log files. 
 
@@ -55,8 +55,7 @@ sub run_download {
     return 0 if ( (-e $file) and (say "DOWNLOADED FILE $file AFTER $attempt ATTEMPTS") );
     
     say "FAILED TO DOWNLOAD FILE: $file AFTER $attempt ATTEMPTS";
-    return 1;
-    
+    return 1;    
 }
 
 sub read_output {
@@ -66,15 +65,26 @@ sub read_output {
     my $time_last_downloading = 0;
     my $last_reported_percent = 0;
 
-    my ($line, $process);
+    my ($size, $percent, $rate);
+    my (@lines, $output, $process);
     sleep (20); # to wait for gtdownload to create the log file
 
-    while( $line = `tail -n 1 $log_filepath` ) {
+    while( $output = `tail -n 20 $log_filepath` ) {
         sleep 10;
-        my ($size, $percent, $rate) = $line =~ m/^Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g;
+
+        ($size , $percent, $rate) = (0,0,0);
+
+        # Gets last occurance of the progress line in the 20 lines from the tail command
+        @lines = split "\n", $output;
+        foreach my $line (@lines) {
+            if (my @captured = $output =~  m/^Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g) {
+                ($size, $percent, $rate) = @captured;
+            }
+        }
+
         $percent = $last_reported_percent unless( defined $percent);
         
-        my $md5sum = ($line =~ m/^Download resumed, validating checksums for existing data/g)? 1: 0;
+        my $md5sum = ($output =~ m/Download resumed, validating checksums for existing data/g)? 1: 0;
 
         $process = `ps aux | grep 'gtdownload -l $log_filepath'`;
         return 0 unless ($process =~ m/children/); # This checks to see if the gtdownload process is still running. Does not say if completed correctly       

@@ -43,20 +43,18 @@ sub run_upload {
 
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        my $upload_cmd = "cd $sub_path; gtupload -v -c $key -l $log_filepath -u ./manifest.xml";
+        my $upload_cmd = "cd $sub_path; gtupload -l $log_filepath -v -c $key -u ./manifest.xml";
 
         say "UPLOAD COMMAND: $upload_cmd\n";
 
         `$upload_cmd </dev/null >/dev/null 2>&1 &`;
 
-        # BUG: Adam, this log is not immediately available... sleep 10 seconds
         sleep 30;
 
-        $read_output = read_output("$sub_path/$log_filepath", $timeout_milliseconds);
+        $read_output = read_output($sub_path, $log_filepath, $timeout_milliseconds);
         if ($read_output == 1 ) {
             say "KILLING PROCESS";
-            # BUG: yet another bug... pkill with -l option wouldn't match!
-            `pkill -f gtupload`;
+            `pkill -f gtupload -l $log_filepath`;  # need to have log_filepath included so that it doesn't kill other gt_upload process
         }
 
     } while ( ($attempt < $max_attempts) and ( $read_output ) );
@@ -69,29 +67,32 @@ sub run_upload {
 }
 
 sub read_output {
-    my ($log_filepath, $timeout) = @_;
+    my ($sub_path, $log_filepath, $timeout) = @_;
 
     my $start_time = time;
     my $time_last_uploading = 0;
     my $last_reported_percent = 0;
 
-    my ($line, $process);
+    my (@lines, $process, $output);
 
-    say "DIR: ".`pwd`." LOG: ".`ls -lth $log_filepath`."\n";
+    say "DIR: ".`pwd`." LOG: ".`ls -lth $sub_path/$log_filepath`."\n";
 
-    # FIXME: Adam, this code is very, very fragile.  First, the -vv option injects a bunch of
-    # lines into the log output that don't match the reg ex below.  And second you use tail -n 1
-    # which means it's possible to have an upload finish and, with the sleep, just miss the
-    # last % uploaded message.  A better way is to always extract the last, say, 20 lines from the file
-    # (or maybe the whole file) and find the last percent mentioned.  That way even if the upload
-    # finishes before your timeout you can detect the "100%" in the log
-    while(  $line = `tail -n 1 $log_filepath`  ) {
+    my ($uploaded, $percent, $rate);
+    while(  $output = `tail -n 20 $sub_path/$log_filepath`  ) {
         sleep(10);
-        my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
+        ($uploaded , $percent, $rate) = (0,0,0);
+
+        # Gets last occurance of the progress line in the 20 lines from the tail command
+        @lines = split "\n", $output;
+        foreach my $line (@lines) {
+            if (my @captured = $line =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g ) {
+                ($uploaded, $percent, $rate) = @captured;
+            }
+        }
+
         $percent = $last_reported_percent unless( defined $percent);
 
-        # BUG: -l option wasn't in correct order, will never match
-        $process = `ps aux | grep 'gtupload'`;
+        $process = `ps aux | grep 'gtupload -l $log_filepath'`; #check to see if the command that we are monitoring has completed. 
         return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly
 
         if ($percent > $last_reported_percent) {
