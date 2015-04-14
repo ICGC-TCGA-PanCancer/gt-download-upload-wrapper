@@ -92,7 +92,7 @@ sub read_output {
         if ( ($percent > $last_reported_percent) || $md5sum) {  # Checks to see if the download is making progress.
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
-            say "  REPORTED PERCENT DOWNLOADED - LAST: $last_reported_percent CURRENT: $size" if ($percent > $last_reported_percent);
+            say "  REPORTED PERCENT DOWNLOADED - LAST: $last_reported_percent CURRENT: $percent" if ($percent > $last_reported_percent);
             say "  IS MD5Sum State: $md5sum" if ($md5sum);
         }
         elsif ((($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) )
