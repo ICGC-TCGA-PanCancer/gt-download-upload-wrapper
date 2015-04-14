@@ -54,7 +54,7 @@ sub run_upload {
         $read_output = read_output($sub_path, $log_filepath, $timeout_milliseconds);
         if ($read_output == 1 ) {
             say "KILLING PROCESS";
-            `pkill -f gtupload -l $log_filepath`;  # need to have log_filepath included so that it doesn't kill other gt_upload process
+            `sudo pkill -f gtupload -l $log_filepath`;  # need to have log_filepath included so that it doesn't kill other gt_upload process
         }
 
     } while ( ($attempt < $max_attempts) and ( $read_output ) );
@@ -85,7 +85,7 @@ sub read_output {
         # Gets last occurance of the progress line in the 20 lines from the tail command
         @lines = split "\n", $output;
         foreach my $line (@lines) {
-            if (my @captured = $line =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g ) {
+            if (my @captured = $line =~ m/Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g ) {
                 ($uploaded, $percent, $rate) = @captured;
             }
         }

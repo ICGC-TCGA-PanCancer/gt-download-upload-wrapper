@@ -47,7 +47,7 @@ sub run_download {
 
         if ( read_output($log_filepath, $timeout_milliseconds) ) {
             say "KILLING PROCESS";
-            `pkill -f 'gtdownload -l $log_filepath'`;
+            `sudo pkill -f 'gtdownload -l $log_filepath'`;
         }
         sleep 10; # to make sure that the file has been created. 
     } while ( ($attempt < $max_attempts) and ( not (-e $file) ) );
@@ -77,7 +77,7 @@ sub read_output {
         # Gets last occurance of the progress line in the 20 lines from the tail command
         @lines = split "\n", $output;
         foreach my $line (@lines) {
-            if (my @captured = $output =~  m/^Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g) {
+            if (my @captured = $output =~  m/Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g) {
                 ($size, $percent, $rate) = @captured;
             }
         }
