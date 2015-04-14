@@ -47,7 +47,7 @@ sub run_download {
 
         if ( read_output($log_filepath, $timeout_milliseconds) ) {
             say "KILLING PROCESS";
-            `pkill -f 'gtdownload -l $log_filepath'`;
+            `sudo pkill -f 'gtdownload -l $log_filepath'`;
         }
         sleep 10; # to make sure that the file has been created. 
     } while ( ($attempt < $max_attempts) and ( not (-e $file) ) );
