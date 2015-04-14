@@ -85,7 +85,7 @@ sub read_output {
         # Gets last occurance of the progress line in the 20 lines from the tail command
         @lines = split "\n", $output;
         foreach my $line (@lines) {
-            if (my @captured = $line =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g ) {
+            if (my @captured = $line =~ m/Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g ) {
                 ($uploaded, $percent, $rate) = @captured;
             }
         }
