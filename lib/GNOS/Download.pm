@@ -89,6 +89,8 @@ sub read_output {
         $process = `ps aux | grep 'gtdownload -l $log_filepath'`;
         return 0 unless ($process =~ m/children/); # This checks to see if the gtdownload process is still running. Does not say if completed correctly       
 
+        return 0 if ($percent > 100); # this is an edge case where for some reason the percentage continues increasing beyond 100%
+
         if ( ($percent > $last_reported_percent) || $md5sum) {  # Checks to see if the download is making progress.
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
