@@ -21,10 +21,22 @@ use constant {
 #############################################################################################
 
 sub run_download {
-    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
+    my $max_children_txt = "";
+    if ($max_children > 0) {
+      $max_children_txt = "--max-children $max_children";
+    }
+    my $rate_limit_mbytes_txt = "";
+    if ($rate_limit_mbytes > 0) {
+      $rate_limit_mbytes_txt = "--rate-limit $rate_limit_mbytes";
+    }
+    my $ktimeout_txt = "";
+    if ($ktimeout > 0) {
+      $ktimeout_txt = "-k $ktimeout";
+    }
 
     my $timeout_milliseconds = ($timeout_minutes / 60) * MILLISECONDS_IN_AN_HOUR;
     say "TIMEOUT: $timeout_minutes minutes ( $timeout_milliseconds milliseconds )";
@@ -33,29 +45,29 @@ sub run_download {
     my $attempt = 0;
     do {
         my @now = localtime();
-        $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d", 
+        $time_stamp = sprintf("%04d-%02d-%02d-%02d-%02d-%02d",
                                  $now[5]+1900, $now[4]+1, $now[3],
                                  $now[2],      $now[1],   $now[0]);
 
         $random_int = int(rand(1000));
-        $log_filepath = "gtdownload-$time_stamp-$random_int.log"; 
+        $log_filepath = "gtdownload-$time_stamp-$random_int.log";
         say "STARTING DOWNLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        `gtdownload -l $log_filepath --max-children 4 --rate-limit 200 -c $pem -v $url -k 60 </dev/null >/dev/null 2>&1 &`;
+        `gtdownload -l $log_filepath $max_children_txt $rate_limit_mbytes_txt -c $pem -v $url $ktimeout_txt </dev/null >/dev/null 2>&1 &`;
 
-        sleep 10; # to give gtdownload a chance to make the log files. 
+        sleep 10; # to give gtdownload a chance to make the log files.
 
         if ( read_output($log_filepath, $timeout_milliseconds) ) {
             say "KILLING PROCESS";
             `sudo pkill -f 'gtdownload -l $log_filepath'`;
         }
-        sleep 10; # to make sure that the file has been created. 
+        sleep 10; # to make sure that the file has been created.
     } while ( ($attempt < $max_attempts) and ( not (-e $file) ) );
-    
+
     return 0 if ( (-e $file) and (say "DOWNLOADED FILE $file AFTER $attempt ATTEMPTS") );
-    
+
     say "FAILED TO DOWNLOAD FILE: $file AFTER $attempt ATTEMPTS";
-    return 1;    
+    return 1;
 }
 
 sub read_output {
@@ -83,11 +95,11 @@ sub read_output {
         }
 
         $percent = $last_reported_percent unless( defined $percent);
-        
+
         my $md5sum = ($output =~ m/Download resumed, validating checksums for existing data/g)? 1: 0;
 
         $process = `ps aux | grep 'gtdownload -l $log_filepath'`;
-        return 0 unless ($process =~ m/children/); # This checks to see if the gtdownload process is still running. Does not say if completed correctly       
+        return 0 unless ($process =~ m/children/); # This checks to see if the gtdownload process is still running. Does not say if completed correctly
 
         return 0 if ($percent > 100); # this is an edge case where for some reason the percentage continues increasing beyond 100%
 
@@ -99,7 +111,7 @@ sub read_output {
         }
         elsif ((($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) )
                  or ( ($percent == 0) and ( (time - $start_time) > (3 * $timeout)) )) { # this check is to see the download has not been working for too long
-                # This should trigger if gtdownload stops being able to download for a certain amount of time 
+                # This should trigger if gtdownload stops being able to download for a certain amount of time
                 #     or if it never starts downloading - giving time for the md5 check
             say "BASED ON OUTPUT DOWNLOAD IS NEEDING TO BE RESTARTED";
             return 1;
