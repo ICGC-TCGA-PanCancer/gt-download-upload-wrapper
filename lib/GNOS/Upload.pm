@@ -21,10 +21,14 @@ use constant {
 #############################################################################################
 
 sub run_upload {
-    my ($class, $sub_path, $key, $max_attempts, $timeout_minutes) = @_;
+    my ($class, $sub_path, $key, $max_attempts, $timeout_minutes, $ktimeout) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
+    my $ktimeout_txt = "";
+    if ($ktimeout > 0) {
+      $ktimeout_txt = " -k $ktimeout ";
+    }
 
     my $timeout_milliseconds = ($timeout_minutes / 60) * MILLISECONDS_IN_AN_HOUR;
     say "TIMEOUT: $timeout_minutes minutes ( $timeout_milliseconds milliseconds )";
@@ -43,7 +47,7 @@ sub run_upload {
 
         say "STARTING UPLOAD WITH LOG FILE $log_filepath ATTEMPT ".++$attempt." OUT OF $max_attempts";
 
-        my $upload_cmd = "cd $sub_path; gtupload -l $log_filepath -v -c $key -u ./manifest.xml";
+        my $upload_cmd = "cd $sub_path; gtupload -l $log_filepath $ktimeout_txt -v -c $key -u ./manifest.xml";
 
         say "UPLOAD COMMAND: $upload_cmd\n";
 
@@ -92,7 +96,7 @@ sub read_output {
 
         $percent = $last_reported_percent unless( defined $percent);
 
-        $process = `ps aux | grep 'gtupload -l $log_filepath'`; #check to see if the command that we are monitoring has completed. 
+        $process = `ps aux | grep 'gtupload -l $log_filepath'`; #check to see if the command that we are monitoring has completed.
         return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly
 
         if ($percent > $last_reported_percent) {
