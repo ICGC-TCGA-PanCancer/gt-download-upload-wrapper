@@ -3,7 +3,7 @@ gt-download-upload-wrapper
 
 #Description
 
-This tool is used to monitor and make gt-download and upload ore robust. 
+This tool is used to monitor and make gt-download and upload ore robust.
 
 To be use primarily with the PanCancer project.
 
@@ -14,12 +14,11 @@ Contained are two modules one for each uploading and downloading
 
 ##Sample Upload
 
-   GNOS::Upload->run_upload($sub_path, $key, $max_attempts, $timeout_minutes);
+    GNOS::Upload->run_upload($sub_path, $key, $max_attempts, $timeout_minutes, $ktimeout);
 
 ##Sample Download
 
-   GNOS::Download->run_download($class, $pem, $url, $file, $max_attempts, $timeout_minutes);
-
+    GNOS::Download->run_download($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout);
 
 We are including the GNOS::Download library by using the -I flag with perl that allows you to specify a path to find the repos. Alterantively you can add the file by adding the line "use lib <lib-path>;" or add the path to the @INC Environment variable.
 
