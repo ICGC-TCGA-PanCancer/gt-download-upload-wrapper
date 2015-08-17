@@ -23,10 +23,11 @@ use constant {
 # TODO: add min rate
 
 sub run_download {
-    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout) = @_;
+    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout, $min_mbytes_per_second) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
+    $min_mbytes_per_second //= 0;
     my $max_children_txt = "";
     if ($max_children > 0) {
       $max_children_txt = "--max-children $max_children";
@@ -59,7 +60,7 @@ sub run_download {
 
         sleep 10; # to give gtdownload a chance to make the log files.
 
-        if ( read_output($log_filepath, $timeout_milliseconds) ) {
+        if ( read_output($log_filepath, $timeout_milliseconds, $min_mbytes_per_second) ) {
             say "KILLING PROCESS";
             `sudo pkill -f 'gtdownload -l $log_filepath'`;
         }
@@ -73,10 +74,7 @@ sub run_download {
 }
 
 sub read_output {
-    my ($log_filepath, $timeout) = @_;
-
-# needs to be param
-my $min_rate = 0;
+    my ($log_filepath, $timeout, $min_rate) = @_;
 
     my $start_time = time;
     my $time_last_downloading = 0;
@@ -110,11 +108,11 @@ my $min_rate = 0;
 
         $process = `ps aux | grep 'gtdownload -l $log_filepath'`;
         return 0 if ($process !~ m/children/ && $percent >= 100); # This checks to see if the gtdownload process is still running. Does not say if completed correctly
-
         #return 0 if ($percent > 100); # this is an edge case where for some reason the percentage continues increasing beyond 100%
 
         # LEFT OFF WITH: need to check the rate here... if < threshold for > retries then kill the job
         # need to properly parse the... need to make this check optional
+
 
         if ( ( $percent > $last_reported_percent && $rate > $min_rate ) || $md5sum) {  # Checks to see if the download is making progress.
             $time_last_downloading = time;
@@ -131,6 +129,7 @@ my $min_rate = 0;
         }
 
         $last_reported_percent = $percent;
+        $last_reported_rate = $rate;
     }
 
     return 1;

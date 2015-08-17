@@ -1,3 +1,16 @@
+# 2.0.13
+
+* upload: fixed a problem where uploads not at 100% are reported as being successful
+* download: added an option where a minimal transfer rate is maintaned otherwise the download is retried
+
+# 2.0.12
+
+* added $max_children, $rate_limit_mbytes, $ktimeout to download. These correspond to the following gtdownload params:
+
+    --max-children
+    --rate-limit
+    -k
+
 # 2.0.11
 
 * added `$ktimeout` to upload, this is the `-k` parameter from gtupload
