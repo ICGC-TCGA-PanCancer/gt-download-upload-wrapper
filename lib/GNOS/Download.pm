@@ -20,11 +20,14 @@ use constant {
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
+# TODO: add min rate
+
 sub run_download {
-    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout) = @_;
+    my ($class, $pem, $url, $file, $max_attempts, $timeout_minutes, $max_children, $rate_limit_mbytes, $ktimeout, $min_mbytes_per_second) = @_;
 
     $max_attempts //= 30;
     $timeout_minutes //= 60;
+    $min_mbytes_per_second //= 0;
     my $max_children_txt = "";
     if ($max_children > 0) {
       $max_children_txt = "--max-children $max_children";
@@ -57,7 +60,7 @@ sub run_download {
 
         sleep 10; # to give gtdownload a chance to make the log files.
 
-        if ( read_output($log_filepath, $timeout_milliseconds) ) {
+        if ( read_output($log_filepath, $timeout_milliseconds, $min_mbytes_per_second) ) {
             say "KILLING PROCESS";
             `sudo pkill -f 'gtdownload -l $log_filepath'`;
         }
@@ -71,39 +74,47 @@ sub run_download {
 }
 
 sub read_output {
-    my ($log_filepath, $timeout) = @_;
+    my ($log_filepath, $timeout, $min_rate) = @_;
 
     my $start_time = time;
     my $time_last_downloading = 0;
     my $last_reported_percent = 0;
+    my $last_reported_rate = 0;
 
-    my ($size, $percent, $rate);
+    my ($size, $percent, $rate, $rate_units);
+    $rate_units = "M";
     my (@lines, $output, $process);
     sleep (20); # to wait for gtdownload to create the log file
 
     while( $output = `tail -n 20 $log_filepath` ) {
         sleep 10;
 
-        ($size , $percent, $rate) = (0,0,0);
+        ($size , $percent, $rate, $rate_units) = (0,0,0,"M");
 
         # Gets last occurance of the progress line in the 20 lines from the tail command
         @lines = split "\n", $output;
         foreach my $line (@lines) {
-            if (my @captured = $line =~  m/Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g) {
-                ($size, $percent, $rate) = @captured;
+            if (my @captured = $line =~  m/Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+([M|K|G])B\/s/g) {
+                ($size, $percent, $rate, $rate_units) = @captured;
+                if ($rate_units eq "K") { $rate = $rate / 1024; }
+                if ($rate_units eq "G") { $rate = $rate * 1024; }
             }
         }
 
         $percent = $last_reported_percent unless( defined $percent);
+        $rate = $last_reported_rate unless( defined $rate);
 
         my $md5sum = ($output =~ m/Download resumed, validating checksums for existing data/g)? 1: 0;
 
         $process = `ps aux | grep 'gtdownload -l $log_filepath'`;
-        return 0 unless ($process =~ m/children/); # This checks to see if the gtdownload process is still running. Does not say if completed correctly
+        return 0 if ($process !~ m/children/ && $percent >= 100); # This checks to see if the gtdownload process is still running. Does not say if completed correctly
+        #return 0 if ($percent > 100); # this is an edge case where for some reason the percentage continues increasing beyond 100%
 
-        return 0 if ($percent > 100); # this is an edge case where for some reason the percentage continues increasing beyond 100%
+        # LEFT OFF WITH: need to check the rate here... if < threshold for > retries then kill the job
+        # need to properly parse the... need to make this check optional
 
-        if ( ($percent > $last_reported_percent) || $md5sum) {  # Checks to see if the download is making progress.
+
+        if ( ( $percent > $last_reported_percent && $rate > $min_rate ) || $md5sum) {  # Checks to see if the download is making progress.
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
             say "  REPORTED PERCENT DOWNLOADED - LAST: $last_reported_percent CURRENT: $percent" if ($percent > $last_reported_percent);
@@ -118,6 +129,7 @@ sub read_output {
         }
 
         $last_reported_percent = $percent;
+        $last_reported_rate = $rate;
     }
 
     return 1;
