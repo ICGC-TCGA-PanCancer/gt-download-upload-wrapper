@@ -97,7 +97,7 @@ sub read_output {
         $percent = $last_reported_percent unless( defined $percent);
 
         $process = `ps aux | grep 'gtupload -l $log_filepath'`; #check to see if the command that we are monitoring has completed.
-        return 0 unless ($process =~ m/manifest/); # This checks to see if the gtupload process is still running. Does not say if completed correctly
+        return 0 if ($process !~ m/manifest/ && $percent >= 100); # This checks to see if the gtupload process is still running. Does not say if completed correctly
 
         if ($percent > $last_reported_percent) {
             $time_last_uploading = time;
