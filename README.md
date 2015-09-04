@@ -3,7 +3,7 @@ gt-download-upload-wrapper
 
 #Description
 
-This tool is used to monitor and make gt-download and upload ore robust.
+This tool is used to monitor and make gt-download and upload more robust.
 
 To be use primarily with the PanCancer project.
 
